@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planetary Gravity Simulator</title>
+</head>
+
+<style>
+    body, html {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+    }
+
+    canvas {
+        display: block;
+        background-color: #000;
+        margin: auto;
+    }
+</style>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const G = 0.1; // Gravitational constant
+    const friction = 0.98; // Friction coefficient
+
+    class Planet
+    {
+        constructor(x, y, radius, mass, color)
+        {
+            this.x = x;
+            this.y = y;
+            this.radius = radius;
+            this.mass = mass;
+            this.color = color;
+            this.velocity = {
+                x: Math.random() * 2 - 1,
+                y: Math.random() * 2 - 1
+            };
+        }
+
+        draw()
+        {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        update()
+        {
+            this.draw();
+            this.x += this.velocity.x;
+            this.y += this.velocity.y;
+
+            this.velocity.x *= friction;
+            this.velocity.y *= friction;
+        }
+    }
+
+    const planets = [];
+    const numPlanets = 5;
+
+    for (let i = 0; i < numPlanets; i++)
+    {
+        const radius = Math.random() * 20 + 10;
+        const x = Math.random() * (canvas.width - 2 * radius) + radius;
+        const y = Math.random() * (canvas.height - 2 * radius) + radius;
+        const mass = radius * 0.1;
+        const color = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`;
+
+        planets.push(new Planet(x, y, radius, mass, color));
+    }
+
+    function animate()
+    {
+        requestAnimationFrame(animate);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        for (const planet of planets)
+        {
+            planet.update();
+        }
+
+        for (let i = 0; i < planets.length; i++)
+        {
+            for (let j = i + 1; j < planets.length; j++)
+            {
+                applyGravity(planets[i], planets[j]);
+            }
+        }
+    }
+
+    function applyGravity(obj1, obj2)
+    {
+        const dx = obj2.x - obj1.x;
+        const dy = obj2.y - obj1.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        const force = (G * obj1.mass * obj2.mass) / (distance * distance);
+
+        const fx = force * dx / distance;
+        const fy = force * dy / distance;
+
+        obj1.velocity.x += fx / obj1.mass;
+        obj1.velocity.y += fy / obj1.mass;
+
+        obj2.velocity.x -= fx / obj2.mass;
+        obj2.velocity.y -= fy / obj2.mass;
+    }
+
+    animate();
+</script>
+
+</body>
+</html>
