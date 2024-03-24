@@ -30,7 +30,7 @@
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const G = 10.1; // Gravitational constant
+    const G = 1.51; // Gravitational constant
     const friction = 1.0; // Friction coefficient
     //const friction = 0.99999; // Friction coefficient
 
@@ -102,19 +102,19 @@
     }
 
     const planets = [];
-    const numPlanets = 50;
+    const numPlanets = 100;
 
     // Create a random generator with a fixed seed so that we get determinism:
     const random = new Random(1234);
 
     for (let i = 0; i < numPlanets; i++)
     {
-        const radius = (random.next() * 20) + 2;
+        const radius = (random.next() * 10) + 2;
         const x = random.next() * (canvas.width - 2 * radius) + radius;
         const y = random.next() * (canvas.height - 2 * radius) + radius;
-        const vx = random.next() * 2 - 1;
-        const vy = random.next() * 2 - 1;
-        const mass = radius / 5;
+        const vx = 0 * (random.next() * 2 - 1);
+        const vy = 0 * (random.next() * 2 - 1);
+        const mass = radius;
         const colorR = (random.next()*0.75 + 0.25) * 255;
         const colorG = (random.next()*0.75 + 0.25) * 255;
         const colorB = (random.next()*0.75 + 0.25) * 255;
@@ -148,7 +148,7 @@
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         // Get the merge threshold:
-        const mergeDistanceThreshold = (planet1.radius + planet2.radius) * 0.8;
+        const mergeDistanceThreshold = (planet1.radius + planet2.radius) * 1.0;
 
         // Look for collisions:
         if (distance <= mergeDistanceThreshold)
@@ -181,13 +181,14 @@
                 planet2.color.b = planetColorB;
             }
 
-
-            // Reverse the velocities:
-            // planet1.velocity.x = -planet1.velocity.x;
-            // planet1.velocity.y = -planet1.velocity.y;
+            // // Compute the merged velocities:
+            // planetVX = planet1.velocity.x * planet1MassRatio + planet2.velocity.x * planet2MassRatio;
+            // planetVY = planet1.velocity.y * planet1MassRatio + planet2.velocity.y * planet2MassRatio;
             //
-            // planet2.velocity.x = -planet2.velocity.x;
-            // planet2.velocity.y = -planet2.velocity.y;
+            // planet1.velocity.x = planetVX;
+            // planet1.velocity.y = planetVY;
+            // planet2.velocity.x = planetVX;
+            // planet2.velocity.y = planetVY;
 
             return;
         }
