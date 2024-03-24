@@ -30,21 +30,54 @@
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const G = 0.1; // Gravitational constant
-    const friction = 0.98; // Friction coefficient
+    const G = 10.1; // Gravitational constant
+    const friction = 1.0; // Friction coefficient
+    //const friction = 0.99999; // Friction coefficient
+
+    /*
+        A Very Simple Random Number Generator that has a seed and
+        generates the same sequence of random numbers,
+        making it deterministic.
+     */
+    class Random
+    {
+        /**
+         * The state of the random generator which allows for repeated calls to the random generator to return a deterministic sequence of values.
+         */
+        state;
+
+        constructor(seed)
+        {
+            this.state = seed;
+        }
+
+        /**
+         * Returns the next random number between 0.0 inclusive and 1.0 exclusive
+         */
+        next()
+        {
+            this.state = Math.sin(this.state) * 10000.0;
+            return this.state - Math.floor(this.state);
+        }
+
+    }
 
     class Planet
     {
-        constructor(x, y, radius, mass, color)
+        constructor(x, y, vx, vy, radius, mass, colorR, colorG, colorB)
         {
             this.x = x;
             this.y = y;
             this.radius = radius;
             this.mass = mass;
-            this.color = color;
+            this.color = {
+                r: colorR,
+                g: colorG,
+                b: colorB
+            };
             this.velocity = {
-                x: Math.random() * 2 - 1,
-                y: Math.random() * 2 - 1
+                x: vx,
+                y: vy
             };
         }
 
@@ -52,7 +85,7 @@
         {
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-            ctx.fillStyle = this.color;
+            ctx.fillStyle = `rgb(${this.color.r}, ${this.color.g}, ${this.color.b})`;
             ctx.fill();
             ctx.closePath();
         }
@@ -69,17 +102,24 @@
     }
 
     const planets = [];
-    const numPlanets = 5;
+    const numPlanets = 50;
+
+    // Create a random generator with a fixed seed so that we get determinism:
+    const random = new Random(1234);
 
     for (let i = 0; i < numPlanets; i++)
     {
-        const radius = Math.random() * 20 + 10;
-        const x = Math.random() * (canvas.width - 2 * radius) + radius;
-        const y = Math.random() * (canvas.height - 2 * radius) + radius;
-        const mass = radius * 0.1;
-        const color = `rgb(${Math.random() * 255}, ${Math.random() * 255}, ${Math.random() * 255})`;
+        const radius = (random.next() * 20) + 2;
+        const x = random.next() * (canvas.width - 2 * radius) + radius;
+        const y = random.next() * (canvas.height - 2 * radius) + radius;
+        const vx = random.next() * 2 - 1;
+        const vy = random.next() * 2 - 1;
+        const mass = radius / 5;
+        const colorR = (random.next()*0.75 + 0.25) * 255;
+        const colorG = (random.next()*0.75 + 0.25) * 255;
+        const colorB = (random.next()*0.75 + 0.25) * 255;
 
-        planets.push(new Planet(x, y, radius, mass, color));
+        planets.push(new Planet(x, y, vx, vy, radius, mass, colorR, colorG, colorB));
     }
 
     function animate()
@@ -101,22 +141,67 @@
         }
     }
 
-    function applyGravity(obj1, obj2)
+    function applyGravity(planet1, planet2)
     {
-        const dx = obj2.x - obj1.x;
-        const dy = obj2.y - obj1.y;
+        const dx = planet2.x - planet1.x;
+        const dy = planet2.y - planet1.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
-        const force = (G * obj1.mass * obj2.mass) / (distance * distance);
+        // Get the merge threshold:
+        const mergeDistanceThreshold = (planet1.radius + planet2.radius) * 0.8;
+
+        // Look for collisions:
+        if (distance <= mergeDistanceThreshold)
+        {
+            // The objects have collided.
+
+            // Get the combined masses of the planets:
+            const combinedMasses = planet1.mass + planet2.mass;
+
+            // Get the mass ratio of each planet:
+            const planet1MassRatio = planet1.mass / combinedMasses;
+            const planet2MassRatio = planet2.mass / combinedMasses;
+
+            // Compute the merged planet colours based on the proportion of their masses:
+            planetColorR = planet1.color.r * planet1MassRatio + planet2.color.r * planet2MassRatio;
+            planetColorG = planet1.color.g * planet1MassRatio + planet2.color.g * planet2MassRatio;
+            planetColorB = planet1.color.b * planet1MassRatio + planet2.color.b * planet2MassRatio;
+
+            // The smaller planet gets the merged colour:
+            if (planet1.mass < planet2.mass)
+            {
+                planet1.color.r = planetColorR;
+                planet1.color.g = planetColorG;
+                planet1.color.b = planetColorB;
+            }
+            else
+            {
+                planet2.color.r = planetColorR;
+                planet2.color.g = planetColorG;
+                planet2.color.b = planetColorB;
+            }
+
+
+            // Reverse the velocities:
+            // planet1.velocity.x = -planet1.velocity.x;
+            // planet1.velocity.y = -planet1.velocity.y;
+            //
+            // planet2.velocity.x = -planet2.velocity.x;
+            // planet2.velocity.y = -planet2.velocity.y;
+
+            return;
+        }
+
+        const force = (G * planet1.mass * planet2.mass) / (distance * distance);
 
         const fx = force * dx / distance;
         const fy = force * dy / distance;
 
-        obj1.velocity.x += fx / obj1.mass;
-        obj1.velocity.y += fy / obj1.mass;
+        planet1.velocity.x += fx / planet1.mass;
+        planet1.velocity.y += fy / planet1.mass;
 
-        obj2.velocity.x -= fx / obj2.mass;
-        obj2.velocity.y -= fy / obj2.mass;
+        planet2.velocity.x -= fx / planet2.mass;
+        planet2.velocity.y -= fy / planet2.mass;
     }
 
     animate();
